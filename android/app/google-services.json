@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "779894881346",
+    "project_id": "akain-campusconnect",
+    "storage_bucket": "akain-campusconnect.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779894881346:android:470d5e4d2abda0171081db",
+        "android_client_info": {
+          "package_name": "com.akain.campusconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBV4JNN3BmjP09bRqs6Fz-wAfYNdpyVZqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
