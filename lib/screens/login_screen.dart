@@ -9,8 +9,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
   bool loading = false;
   String errorText = '';
   bool showText = false;
@@ -25,31 +23,43 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void loginUser() async {
-    setState(() {
-      loading = true;
-      errorText = '';
-    });
+  // 🔥 GOOGLE SIGN-IN FUNCTION
+  Future<void> signInWithGoogle() async {
+  setState(() {
+    loading = true;
+    errorText = '';
+  });
 
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text,
-      );
+  try {
+    final GoogleAuthProvider googleProvider = GoogleAuthProvider();
 
-      // ✅ Navigate to home screen after successful login
-      Navigator.pushReplacementNamed(context, '/home');
+    UserCredential userCredential =
+        await FirebaseAuth.instance.signInWithPopup(googleProvider);
 
-    } on FirebaseAuthException catch (e) {
+    String email = userCredential.user!.email!;
+
+    // 🔒 University email check
+    if (!email.endsWith("@kzu.ac.in")) {
+      await FirebaseAuth.instance.signOut();
+
       setState(() {
-        errorText = e.message ?? 'Login failed.';
-      });
-    } finally {
-      setState(() {
+        errorText =
+            "Please sign in using your official university email (@kzu.ac.in).";
         loading = false;
       });
+      return;
     }
+
+    // ✅ Success
+    Navigator.pushReplacementNamed(context, '/home');
+
+  } catch (e) {
+    setState(() {
+      errorText = "Google sign-in failed. Please try again.";
+      loading = false;
+    });
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Log in to continue',
+                        'Continue with your university account',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
@@ -94,74 +104,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              TextField(
-                controller: emailController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: const Color(0xff1e293b),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: const Icon(Icons.email, color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: const Color(0xff1e293b),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 16),
+
               if (errorText.isNotEmpty)
                 Text(
                   errorText,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 20),
+
+              // 🔥 GOOGLE BUTTON
               ElevatedButton(
-                onPressed: loading ? null : loginUser,
+                onPressed: loading ? null : signInWithGoogle,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff3b82f6),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/register');
-                },
-                child: const Text(
-                  'Don\'t have an account? Sign up',
-                  style: TextStyle(color: Colors.grey),
-                ),
+                    ? const CircularProgressIndicator()
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.login, size: 22),
+                          SizedBox(width: 10),
+                          Text(
+                            "Continue with Google",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ],
           ),
