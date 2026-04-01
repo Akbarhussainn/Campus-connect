@@ -8,7 +8,8 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
 
@@ -23,7 +24,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     _slideController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1200),
     )..forward();
   }
 
@@ -39,82 +40,100 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     final slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.4),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOut),
+    );
 
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // 🌄 Background Image
           Image.asset(
             'assets/images/IMG-20221213-WA0000.jpg',
             fit: BoxFit.cover,
           ),
+
+          // 🌫 Blur Overlay
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
             child: Container(
               color: Colors.black.withOpacity(0.4),
             ),
           ),
+
+          // ✨ Content
           FadeTransition(
             opacity: _fadeController,
             child: SlideTransition(
               position: slideAnimation,
               child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "Explore friends from your campus",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/auth');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        elevation: 8,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 32),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        "Continue with University Email",
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Explore connections from your campus",
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: 0.5,
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/register');
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white70,
+
+                      const SizedBox(height: 40),
+
+                      // ✅ MAIN BUTTON
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          elevation: 8,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 32,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          "Continue with University Email",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                      child: const Text(
-                        "Or use phone number",
-                        style: TextStyle(fontSize: 14),
+
+                      const SizedBox(height: 16),
+
+                      // 🔁 Login shortcut (optional but good UX)
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/login');
+                        },
+                        child: const Text(
+                          "Already have an account? Login",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

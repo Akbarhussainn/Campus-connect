@@ -11,10 +11,21 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
   bool loading = false;
   String errorText = '';
 
+  // 🔐 Email + Password Signup
   void registerUser() async {
+    String email = emailController.text.trim();
+
+    if (!email.endsWith("@kzu.ac.in")) {
+      setState(() {
+        errorText = "Please use your university email (@kzu.ac.in)";
+      });
+      return;
+    }
+
     setState(() {
       loading = true;
       errorText = '';
@@ -22,18 +33,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
+        email: email,
         password: passwordController.text,
       );
 
-      // 🔒 Sign out the new user
-      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacementNamed(context, '/home');
 
-      // ✅ Go to Login Screen
-      Navigator.pushReplacementNamed(context, '/login');
     } on FirebaseAuthException catch (e) {
       setState(() {
-        errorText = e.message ?? 'Registration failed.';
+        errorText = e.message ?? "Signup failed";
       });
     } finally {
       setState(() {
@@ -42,11 +50,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
+  // 🔵 Google Sign-In (Web)
+  Future<void> signInWithGoogle() async {
+    setState(() {
+      loading = true;
+      errorText = '';
+    });
+
+    try {
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithPopup(googleProvider);
+
+      String email = userCredential.user!.email!;
+
+      // 🔒 Restrict to university email
+      if (!email.endsWith("@kzu.ac.in")) {
+        await FirebaseAuth.instance.signOut();
+
+        setState(() {
+          errorText =
+              "Please sign in using your university email (@kzu.ac.in)";
+          loading = false;
+        });
+        return;
+      }
+
+      Navigator.pushReplacementNamed(context, '/home');
+
+    } catch (e) {
+      setState(() {
+        errorText = "Google sign-in failed. Try again.";
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -59,21 +97,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+
               const Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: 32,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                "Create your account",
                 textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              const SizedBox(height: 40),
+
+              const SizedBox(height: 30),
+
+              // 📧 Email
               TextField(
                 controller: emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Email',
+                  hintText: "University Email",
                   hintStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: const Color(0xff1e293b),
@@ -81,16 +123,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  prefixIcon: const Icon(Icons.email, color: Colors.white),
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // 🔒 Password
               TextField(
                 controller: passwordController,
                 obscureText: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: "Password",
                   hintStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: const Color(0xff1e293b),
@@ -98,15 +142,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.white),
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // ❌ Error
               if (errorText.isNotEmpty)
-                Text(errorText,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center),
+                Text(
+                  errorText,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+
               const SizedBox(height: 16),
+
+              // 🟢 Sign Up button
               ElevatedButton(
                 onPressed: loading ? null : registerUser,
                 style: ElevatedButton.styleFrom(
@@ -118,17 +169,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Sign Up',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                    : const Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
-              const SizedBox(height: 12),
+
+              const SizedBox(height: 20),
+
+              const Center(
+                child: Text(
+                  "OR",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 🔵 Google button
+              ElevatedButton.icon(
+                onPressed: loading ? null : signInWithGoogle,
+                icon: const Icon(Icons.login, color: Colors.black),
+                label: const Text(
+                  "Continue with Google",
+                  style: TextStyle(color: Colors.black),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 🔁 Login redirect
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/login');
                 },
                 child: const Text(
-                  'Already have an account? Log in',
+                  "Already have an account? Login",
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
