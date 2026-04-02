@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-bool obscurePassword = true;
-bool isHovered = false;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +12,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
+  bool obscurePassword = true;
+  bool isHovered = false;
   bool loading = false;
   String errorText = '';
   bool showText = false;
@@ -190,6 +190,8 @@ class _LoginScreenState extends State<LoginScreen> {
               // 🟢 LOGIN BUTTON
                // add at top
 
+const SizedBox(height: 16),
+
 MouseRegion(
   onEnter: (_) {
     setState(() => isHovered = true);
@@ -198,28 +200,27 @@ MouseRegion(
     setState(() => isHovered = false);
   },
   child: AnimatedContainer(
-    duration: const Duration(milliseconds: 200),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(6),
-      boxShadow: isHovered
-          ? [
-              BoxShadow(
-                color: Colors.blue.withOpacity(0.6),
-                blurRadius: 6,
-                spreadRadius: 1,
-              ),
-            ]
-          : [],
-    ),
+    duration: const Duration(milliseconds: 150),
     child: ElevatedButton(
       onPressed: loading ? null : loginUser,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xff3b82f6),
+        backgroundColor: isHovered
+            ? const Color(0xff2563eb) // darker blue on hover
+            : const Color(0xff3b82f6), // normal
         padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
       child: loading
           ? const CircularProgressIndicator(color: Colors.white)
-          : const Text("Login"),
+          : const Text(
+              "Login",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     ),
   ),
 ),

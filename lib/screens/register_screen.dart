@@ -15,7 +15,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool loading = false;
   String errorText = '';
 
-  // 🔐 Email + Password Signup
+  bool obscurePassword = true; // 👁️ toggle
+  bool isHovered = false; // 🔵 hover effect
+
+  // 🔐 EMAIL SIGNUP
   void registerUser() async {
     String email = emailController.text.trim();
 
@@ -50,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // 🔵 Google Sign-In (Web)
+  // 🔵 GOOGLE SIGN-IN
   Future<void> signInWithGoogle() async {
     setState(() {
       loading = true;
@@ -65,7 +68,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       String email = userCredential.user!.email!;
 
-      // 🔒 Restrict to university email
       if (!email.endsWith("@kzu.ac.in")) {
         await FirebaseAuth.instance.signOut();
 
@@ -110,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 30),
 
-              // 📧 Email
+              // 📧 EMAIL FIELD
               TextField(
                 controller: emailController,
                 style: const TextStyle(color: Colors.white),
@@ -128,10 +130,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 16),
 
-              // 🔒 Password
+              // 🔒 PASSWORD FIELD WITH EYE
               TextField(
                 controller: passwordController,
-                obscureText: true,
+                obscureText: obscurePassword,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: "Password",
@@ -142,12 +144,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // ❌ Error
+              // ❌ ERROR TEXT
               if (errorText.isNotEmpty)
                 Text(
                   errorText,
@@ -157,25 +172,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 16),
 
-              // 🟢 Sign Up button
-              ElevatedButton(
-                onPressed: loading ? null : registerUser,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff3b82f6),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // 🔵 SIGN UP BUTTON (HOVER DARK)
+              MouseRegion(
+                onEnter: (_) {
+                  setState(() => isHovered = true);
+                },
+                onExit: (_) {
+                  setState(() => isHovered = false);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  child: ElevatedButton(
+                    onPressed: loading ? null : registerUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isHovered
+                          ? const Color(0xff2563eb)
+                          : const Color(0xff3b82f6),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: loading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white)
+                        : const Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
-                child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Sign Up",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
               ),
 
               const SizedBox(height: 20),
@@ -189,23 +218,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // 🔵 Google button
-              ElevatedButton.icon(
+              // 🟢 GOOGLE BUTTON
+              ElevatedButton(
                 onPressed: loading ? null : signInWithGoogle,
-                icon: const Icon(Icons.login, color: Colors.black),
-                label: const Text(
-                  "Continue with Google",
-                  style: TextStyle(color: Colors.black),
-                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.g_mobiledata,
+                        color: Colors.red, size: 28),
+                    SizedBox(width: 8),
+                    Text(
+                      "Continue with Google",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // 🔁 Login redirect
+              // 🔁 LOGIN REDIRECT
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/login');
