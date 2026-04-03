@@ -1,6 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+
+Future<void> saveUser(User user) async {
+  final userRef =
+      FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+  final doc = await userRef.get();
+
+  if (!doc.exists) {
+    await userRef.set({
+      "uid": user.uid,
+      "email": user.email,
+      "name": user.email!.split('@')[0],
+      "createdAt": Timestamp.now(),
+    });
+  }
+}
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -38,7 +55,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: passwordController.text,
-      );
+      );User user = FirebaseAuth.instance.currentUser!;
+await saveUser(user);
 
       Navigator.pushReplacementNamed(context, '/home');
 
@@ -54,6 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // 🔵 GOOGLE SIGN-IN
+  
   Future<void> signInWithGoogle() async {
     setState(() {
       loading = true;
@@ -65,7 +84,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       UserCredential userCredential =
           await FirebaseAuth.instance.signInWithPopup(googleProvider);
-
+      User user = userCredential.user!;
+await saveUser(user);
       String email = userCredential.user!.email!;
 
       if (!email.endsWith("@kzu.ac.in")) {
@@ -88,6 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     }
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
 
               // 🔵 SIGN UP BUTTON (HOVER DARK)
+              
               MouseRegion(
                 onEnter: (_) {
                   setState(() => isHovered = true);
@@ -206,7 +228,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-
+              
               const SizedBox(height: 20),
 
               const Center(
@@ -217,6 +239,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
 
               const SizedBox(height: 20),
+              
 
               // 🟢 GOOGLE BUTTON
               ElevatedButton(
