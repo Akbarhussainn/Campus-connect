@@ -6,6 +6,7 @@ import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/dashboard_page.dart';
 import 'router.dart'; // your router file
 
 void main() async {
@@ -21,24 +22,32 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Campus Connect',
+      title: 'Campus Connect',    
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.ltr,
           child: child ?? const SizedBox(),
         );
       },
+
+
+    // If you want to see only a particular page, change here (Home_screen/Dashboard etc.), before routes.
+
+
       routes: {
         '/': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
-        '/auth': (context) => const AuthWrapper(), // ADD THIS
+        '/auth': (context) => const AuthWrapper(),
+        '/dashboard': (context) => const DashboardPage() // After any changes we have to add here 
       },
       // 👇 Make AuthWrapper the initial screen
-      initialRoute: '/',
+      initialRoute: '/dashboard',
     );
   }
 }
