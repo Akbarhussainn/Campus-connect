@@ -45,106 +45,119 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 🔐 EMAIL LOGIN
   void loginUser() async {
-    String email = emailController.text.trim();
+  String email = emailController.text.trim();
+
+  if (!email.endsWith("@kzu.ac.in")) {
+    setState(() {
+      errorText = "Use university email";
+    });
+    return;
+  }
+
+  setState(() {
+    loading = true;
+    errorText = '';
+  });
+
+  try {
+    // 🔥 LOGIN
+    UserCredential cred = await FirebaseAuth.instance
+        .signInWithEmailAndPassword(
+      email: email,
+      password: passwordController.text,
+    );
+
+    User user = cred.user!;
+
+    print("✅ LOGIN SUCCESS");
+
+    // 🚀 NAVIGATE IMMEDIATELY
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/dashboard');
+
+    // 🔥 SAVE USER IN BACKGROUND (DON'T BLOCK UI)
+    saveUser(user).catchError((e) {
+      print("Firestore error: $e");
+    });
+
+  } on FirebaseAuthException catch (e) {
+
+    if (e.code == 'user-not-found' ||
+        e.code == 'invalid-credential' ||
+        e.code == 'invalid-login-credentials') {
+
+      setState(() {
+        errorText = "No account found. Redirecting...";
+      });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/register');
+        }
+      });
+    }
+
+    else if (e.code == 'wrong-password') {
+      setState(() {
+        errorText = "Incorrect password";
+      });
+    }
+
+    else {
+      setState(() {
+        errorText = "Login failed";
+      });
+    }
+
+  } finally {
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
+}
+
+  // 🔵 GOOGLE SIGN-IN (FIXED ADDED)
+  Future<void> signInWithGoogle() async {
+  setState(() {
+    loading = true;
+    errorText = '';
+  });
+
+  try {
+    final googleProvider = GoogleAuthProvider();
+
+    UserCredential userCredential =
+        await FirebaseAuth.instance.signInWithPopup(googleProvider);
+
+    User user = userCredential.user!;
+    String email = user.email!;
 
     if (!email.endsWith("@kzu.ac.in")) {
+      await FirebaseAuth.instance.signOut();
+
       setState(() {
-        errorText = "Please use your university email (@kzu.ac.in)";
+        errorText = "Use university email";
+        loading = false;
       });
       return;
     }
 
-    setState(() {
-      loading = true;
-      errorText = '';
+    // 🚀 NAVIGATE FIRST
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/dashboard');
+
+    // 🔥 SAVE IN BACKGROUND
+    saveUser(user).catchError((e) {
+      print("Firestore error: $e");
     });
 
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: passwordController.text,
-      );
-
-      User user = FirebaseAuth.instance.currentUser!;
-      await saveUser(user);
-
-      Navigator.pushReplacementNamed(context, '/home');
-
-    } on FirebaseAuthException catch (e) {
-
-      if (e.code == 'user-not-found' ||
-          e.code == 'invalid-credential' ||
-          e.code == 'invalid-login-credentials') {
-
-        setState(() {
-          errorText =
-              "No account found. Redirecting you to sign up...";
-        });
-
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, '/register');
-          }
-        });
-      }
-
-      else if (e.code == 'wrong-password') {
-        setState(() {
-          errorText = "Incorrect password. Please try again.";
-        });
-      }
-
-      else {
-        setState(() {
-          errorText = "Login failed. Please try again.";
-        });
-      }
-
-    } finally {
-      setState(() {
-        loading = false;
-      });
-    }
-  }
-
-  // 🔵 GOOGLE SIGN-IN (FIXED ADDED)
-  Future<void> signInWithGoogle() async {
+  } catch (e) {
     setState(() {
-      loading = true;
-      errorText = '';
+      errorText = "Google sign-in failed";
+      loading = false;
     });
-
-    try {
-      final googleProvider = GoogleAuthProvider();
-
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithPopup(googleProvider);
-
-      String email = userCredential.user!.email!;
-
-      if (!email.endsWith("@kzu.ac.in")) {
-        await FirebaseAuth.instance.signOut();
-
-        setState(() {
-          errorText =
-              "Please use your university email (@kzu.ac.in)";
-          loading = false;
-        });
-        return;
-      }
-
-      User user = userCredential.user!;
-      await saveUser(user);
-
-      Navigator.pushReplacementNamed(context, '/home');
-
-    } catch (e) {
-      setState(() {
-        errorText = "Google sign-in failed. Try again.";
-        loading = false;
-      });
-    }
   }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -37,81 +37,94 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // 🔐 EMAIL SIGNUP
   void registerUser() async {
-    String email = emailController.text.trim();
+  String email = emailController.text.trim();
+
+  if (!email.endsWith("@kzu.ac.in")) {
+    setState(() {
+      errorText = "Use university email";
+    });
+    return;
+  }
+
+  setState(() {
+    loading = true;
+    errorText = '';
+  });
+
+  try {
+    // 🔥 CREATE AUTH USER
+    UserCredential cred = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+      email: email,
+      password: passwordController.text,
+    );
+
+    User user = cred.user!;
+
+    print("✅ Auth created");
+
+    // 🚀 NAVIGATE IMMEDIATELY
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/dashboard');
+
+    // 🔥 SAVE USER IN BACKGROUND (DON'T BLOCK UI)
+    saveUser(user).catchError((e) {
+      print("Firestore error: $e");
+    });
+
+  } on FirebaseAuthException catch (e) {
+    setState(() {
+      errorText = e.message ?? "Signup failed";
+    });
+  } finally {
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
+}
+  // 🔵 GOOGLE SIGN-IN
+  
+ Future<void> signInWithGoogle() async {
+  setState(() {
+    loading = true;
+    errorText = '';
+  });
+
+  try {
+    final googleProvider = GoogleAuthProvider();
+
+    UserCredential userCredential =
+        await FirebaseAuth.instance.signInWithPopup(googleProvider);
+
+    User user = userCredential.user!;
+    String email = user.email!;
 
     if (!email.endsWith("@kzu.ac.in")) {
+      await FirebaseAuth.instance.signOut();
+
       setState(() {
-        errorText = "Please use your university email (@kzu.ac.in)";
+        errorText = "Use university email";
+        loading = false;
       });
       return;
     }
 
-    setState(() {
-      loading = true;
-      errorText = '';
+    // 🚀 NAVIGATE FIRST
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/dashboard');
+
+    // 🔥 SAVE IN BACKGROUND
+    saveUser(user).catchError((e) {
+      print("Firestore error: $e");
     });
 
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: passwordController.text,
-      );User user = FirebaseAuth.instance.currentUser!;
-
-// 🚀 MOVE NAVIGATION UP
-      Navigator.pushReplacementNamed(context, '/dashboard');
-
-// 🔥 SAVE IN BACKGROUND (DON'T BLOCK UI)
-      saveUser(user);
-
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        errorText = e.message ?? "Signup failed";
-      });
-    } finally {
-      setState(() {
-        loading = false;
-      });
-    }
-  }
-
-  // 🔵 GOOGLE SIGN-IN
-  
-  Future<void> signInWithGoogle() async {
+  } catch (e) {
     setState(() {
-      loading = true;
-      errorText = '';
+      errorText = "Google sign-in failed";
+      loading = false;
     });
-
-    try {
-      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithPopup(googleProvider);
-      User user = userCredential.user!;
-await saveUser(user);
-      String email = userCredential.user!.email!;
-
-      if (!email.endsWith("@kzu.ac.in")) {
-        await FirebaseAuth.instance.signOut();
-
-        setState(() {
-          errorText =
-              "Please sign in using your university email (@kzu.ac.in)";
-          loading = false;
-        });
-        return;
-      }
-
-      Navigator.pushReplacementNamed(context, '/home');
-
-    } catch (e) {
-      setState(() {
-        errorText = "Google sign-in failed. Try again.";
-        loading = false;
-      });
-    }
   }
-  
+}
 
   @override
   Widget build(BuildContext context) {
