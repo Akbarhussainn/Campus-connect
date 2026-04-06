@@ -28,13 +28,21 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Campus Connect',    
       builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.ltr,
-          child: child ?? const SizedBox(),
-        );
-      },
+  return Center(
+    child: Container(
+      width: 390,   // 📱 phone width
+      height: 844,  // 📱 phone height
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: child,
+    ),
+  );
+},
 
-
+    
     // If you want to see only a particular page, change here (Home_screen/Dashboard etc.), before routes.
 
 
@@ -48,6 +56,6 @@ class MyApp extends StatelessWidget {
       },
       // 👇 Make AuthWrapper the initial screen
       initialRoute: '/dashboard',
-    );
+    );  
   }
 }
