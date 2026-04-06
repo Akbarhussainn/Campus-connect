@@ -73,15 +73,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
   } on FirebaseAuthException catch (e) {
-    setState(() {
-      errorText = e.message ?? "Signup failed";
-    });
-  } finally {
-    if (mounted) {
-      setState(() => loading = false);
-    }
+  print("REGISTER ERROR: ${e.code}");
+
+  switch (e.code) {
+    case 'email-already-in-use':
+      errorText = "Account already exists. Please login";
+      break;
+
+    case 'weak-password':
+      errorText = "Password should be at least 6 characters";
+      break;
+
+    case 'invalid-email':
+      errorText = "Invalid email format";
+      break;
+
+    case 'network-request-failed':
+      errorText = "Check your internet connection";
+      break;
+
+    default:
+      errorText = "Signup failed. Try again";
   }
-}
+
+  setState(() {});
+}}
   // 🔵 GOOGLE SIGN-IN
   
  Future<void> signInWithGoogle() async {
@@ -91,41 +107,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
   });
 
   try {
-    final googleProvider = GoogleAuthProvider();
+    // 🔥 FORCE ACCOUNT SELECTION
+    final googleProvider = GoogleAuthProvider()
+      ..setCustomParameters({
+        'prompt': 'select_account',
+      });
+
+    // 🔥 CLEAR OLD SESSION (VERY IMPORTANT)
+    await FirebaseAuth.instance.signOut();
 
     UserCredential userCredential =
         await FirebaseAuth.instance.signInWithPopup(googleProvider);
 
     User user = userCredential.user!;
-    String email = user.email!;
+    String email = user.email!.toLowerCase().trim();
 
+    // 🚫 DOMAIN CHECK
     if (!email.endsWith("@kzu.ac.in")) {
       await FirebaseAuth.instance.signOut();
 
       setState(() {
-        errorText = "Use university email";
-        loading = false;
+        errorText = "Use your university email (@kzu.ac.in)";
       });
       return;
     }
 
-    // 🚀 NAVIGATE FIRST
+    print("✅ GOOGLE REGISTER SUCCESS");
+
     if (!mounted) return;
+
+    // 🚀 NAVIGATE IMMEDIATELY
     Navigator.pushReplacementNamed(context, '/dashboard');
 
-    // 🔥 SAVE IN BACKGROUND
+    // 🔥 SAVE USER IN BACKGROUND
     saveUser(user).catchError((e) {
       print("Firestore error: $e");
     });
 
   } catch (e) {
+    print("GOOGLE REGISTER ERROR: $e");
+
     setState(() {
-      errorText = "Google sign-in failed";
-      loading = false;
+      errorText = "Google sign-up cancelled or failed";
     });
+  } finally {
+    if (mounted) setState(() => loading = false);
   }
 }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

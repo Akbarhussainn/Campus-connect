@@ -6,7 +6,7 @@ import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/dashboard_page.dart';
+import 'screens/dashboard_screen.dart';
 import 'router.dart'; // your router file
 
 void main() async {

@@ -44,8 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // 🔐 EMAIL LOGIN
-  void loginUser() async {
-  String email = emailController.text.trim();
+ void loginUser() async {
+  String email = emailController.text.trim().toLowerCase();
 
   if (!email.endsWith("@kzu.ac.in")) {
     setState(() {
@@ -60,7 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
   });
 
   try {
-    // 🔥 LOGIN
     UserCredential cred = await FirebaseAuth.instance
         .signInWithEmailAndPassword(
       email: email,
@@ -71,51 +70,44 @@ class _LoginScreenState extends State<LoginScreen> {
 
     print("✅ LOGIN SUCCESS");
 
-    // 🚀 NAVIGATE IMMEDIATELY
     if (!mounted) return;
+
+    // 🚀 ALWAYS GO DASHBOARD IF SUCCESS
     Navigator.pushReplacementNamed(context, '/dashboard');
 
-    // 🔥 SAVE USER IN BACKGROUND (DON'T BLOCK UI)
-    saveUser(user).catchError((e) {
-      print("Firestore error: $e");
-    });
+    // 🔥 background save
+    saveUser(user);
 
   } on FirebaseAuthException catch (e) {
+  print("LOGIN ERROR: ${e.code}");
 
-    if (e.code == 'user-not-found' ||
-        e.code == 'invalid-credential' ||
-        e.code == 'invalid-login-credentials') {
+  switch (e.code) {
+    case 'user-not-found':
+      errorText = "No account found with this email";
+      break;
 
-      setState(() {
-        errorText = "No account found. Redirecting...";
-      });
+    case 'wrong-password':
+      errorText = "Incorrect password";
+      break;
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/register');
-        }
-      });
-    }
+    case 'invalid-email':
+      errorText = "Invalid email format";
+      break;
 
-    else if (e.code == 'wrong-password') {
-      setState(() {
-        errorText = "Incorrect password";
-      });
-    }
+    case 'invalid-credential':
+      errorText = "Wrong email or password";
+      break;
 
-    else {
-      setState(() {
-        errorText = "Login failed";
-      });
-    }
+    case 'too-many-requests':
+      errorText = "Too many attempts. Try later";
+      break;
 
-  } finally {
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    default:
+      errorText = "Login failed. Try again";
   }
-}
 
+  setState(() {});
+}}
   // 🔵 GOOGLE SIGN-IN (FIXED ADDED)
   Future<void> signInWithGoogle() async {
   setState(() {
@@ -124,38 +116,42 @@ class _LoginScreenState extends State<LoginScreen> {
   });
 
   try {
-    final googleProvider = GoogleAuthProvider();
+    // 🔥 FORCE ACCOUNT SELECTION
+    final googleProvider = GoogleAuthProvider()
+      ..setCustomParameters({
+        'prompt': 'select_account', // ✅ FIX
+      });
+
+    // 🔥 SIGN OUT FIRST (IMPORTANT)
+    await FirebaseAuth.instance.signOut();
 
     UserCredential userCredential =
         await FirebaseAuth.instance.signInWithPopup(googleProvider);
 
     User user = userCredential.user!;
-    String email = user.email!;
+    String email = user.email!.toLowerCase().trim();
 
     if (!email.endsWith("@kzu.ac.in")) {
       await FirebaseAuth.instance.signOut();
 
       setState(() {
-        errorText = "Use university email";
-        loading = false;
+        errorText = "Use your university email (@kzu.ac.in)";
       });
       return;
     }
 
-    // 🚀 NAVIGATE FIRST
     if (!mounted) return;
+
     Navigator.pushReplacementNamed(context, '/dashboard');
 
-    // 🔥 SAVE IN BACKGROUND
-    saveUser(user).catchError((e) {
-      print("Firestore error: $e");
-    });
+    saveUser(user);
 
   } catch (e) {
     setState(() {
-      errorText = "Google sign-in failed";
-      loading = false;
+      errorText = "Google sign-in cancelled or failed";
     });
+  } finally {
+    if (mounted) setState(() => loading = false);
   }
 }
 
