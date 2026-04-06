@@ -56,9 +56,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: email,
         password: passwordController.text,
       );User user = FirebaseAuth.instance.currentUser!;
-await saveUser(user);
 
-      Navigator.pushReplacementNamed(context, '/home');
+// 🚀 MOVE NAVIGATION UP
+      Navigator.pushReplacementNamed(context, '/dashboard');
+
+// 🔥 SAVE IN BACKGROUND (DON'T BLOCK UI)
+      saveUser(user);
 
     } on FirebaseAuthException catch (e) {
       setState(() {
