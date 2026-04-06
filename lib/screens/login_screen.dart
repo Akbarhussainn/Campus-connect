@@ -48,9 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String email = emailController.text.trim().toLowerCase();
 
   if (!email.endsWith("@kzu.ac.in")) {
-    setState(() {
-      errorText = "Use university email";
-    });
+    setState(() => errorText = "Use university email");
     return;
   }
 
@@ -70,44 +68,40 @@ class _LoginScreenState extends State<LoginScreen> {
 
     print("✅ LOGIN SUCCESS");
 
+    // 🔥 SAVE USER PROPERLY
+    await saveUser(user);
+
     if (!mounted) return;
 
-    // 🚀 ALWAYS GO DASHBOARD IF SUCCESS
     Navigator.pushReplacementNamed(context, '/dashboard');
 
-    // 🔥 background save
-    saveUser(user);
-
   } on FirebaseAuthException catch (e) {
-  print("LOGIN ERROR: ${e.code}");
+    print("LOGIN ERROR: ${e.code}");
 
-  switch (e.code) {
-    case 'user-not-found':
-      errorText = "No account found with this email";
-      break;
+    switch (e.code) {
+      case 'user-not-found':
+        errorText = "Account not found";
+        break;
+      case 'wrong-password':
+        errorText = "Wrong password";
+        break;
+      case 'invalid-email':
+        errorText = "Invalid email format";
+        break;
+      case 'invalid-credential':
+        errorText = "Email or password incorrect";
+        break;
+      case 'too-many-requests':
+        errorText = "Too many attempts. Try later";
+        break;
+      default:
+        errorText = "Login failed";
+    }
 
-    case 'wrong-password':
-      errorText = "Incorrect password";
-      break;
-
-    case 'invalid-email':
-      errorText = "Invalid email format";
-      break;
-
-    case 'invalid-credential':
-      errorText = "Wrong email or password";
-      break;
-
-    case 'too-many-requests':
-      errorText = "Too many attempts. Try later";
-      break;
-
-    default:
-      errorText = "Login failed. Try again";
+  } finally {
+    if (mounted) setState(() => loading = false);
   }
-
-  setState(() {});
-}}
+}
   // 🔵 GOOGLE SIGN-IN (FIXED ADDED)
   Future<void> signInWithGoogle() async {
   setState(() {
@@ -116,39 +110,37 @@ class _LoginScreenState extends State<LoginScreen> {
   });
 
   try {
-    // 🔥 FORCE ACCOUNT SELECTION
-    final googleProvider = GoogleAuthProvider()
-      ..setCustomParameters({
-        'prompt': 'select_account', // ✅ FIX
-      });
-
-    // 🔥 SIGN OUT FIRST (IMPORTANT)
+    // 🔥 FORCE ACCOUNT SELECT EVERY TIME
     await FirebaseAuth.instance.signOut();
 
-    UserCredential userCredential =
+    final googleProvider = GoogleAuthProvider()
+      ..setCustomParameters({'prompt': 'select_account'});
+
+    final userCredential =
         await FirebaseAuth.instance.signInWithPopup(googleProvider);
 
-    User user = userCredential.user!;
-    String email = user.email!.toLowerCase().trim();
+    final user = userCredential.user!;
+    final email = user.email!.toLowerCase();
 
     if (!email.endsWith("@kzu.ac.in")) {
       await FirebaseAuth.instance.signOut();
 
       setState(() {
-        errorText = "Use your university email (@kzu.ac.in)";
+        errorText = "Use university email (@kzu.ac.in)";
       });
       return;
     }
+
+    // 🔥 SAVE USER FIRST
+    await saveUser(user);
 
     if (!mounted) return;
 
     Navigator.pushReplacementNamed(context, '/dashboard');
 
-    saveUser(user);
-
   } catch (e) {
     setState(() {
-      errorText = "Google sign-in cancelled or failed";
+      errorText = "Google sign-in failed";
     });
   } finally {
     if (mounted) setState(() => loading = false);
