@@ -1,23 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/user_service.dart';
 
 
-Future<void> saveUser(User user) async {
-  final userRef =
-      FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-  final doc = await userRef.get();
-
-  if (!doc.exists) {
-    await userRef.set({
-      "uid": user.uid,
-      "email": user.email,
-      "name": user.email!.split('@')[0],
-      "createdAt": Timestamp.now(),
-    });
-  }
-}
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -61,14 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     print("✅ Auth created");
 
     // 🔥 SAVE USER FIRST (IMPORTANT FIX)
-    await saveUser(user);
+  if (!mounted) return;
+Navigator.pushReplacementNamed(context, '/dashboard');
 
-    print("✅ Firestore saved");
-
-    if (!mounted) return;
-
-    // 🚀 THEN NAVIGATE
-    Navigator.pushReplacementNamed(context, '/dashboard');
+saveUser(user);
 
   } on FirebaseAuthException catch (e) {
     print("REGISTER ERROR: ${e.code}");
@@ -122,12 +104,12 @@ Future<void> signInWithGoogle() async {
     }
 
     // 🔥 SAVE FIRST
-    await saveUser(user);
+    
 
     if (!mounted) return;
 
     Navigator.pushReplacementNamed(context, '/dashboard');
-
+saveUser(user); // ❗ no await
   } catch (e) {
     setState(() {
       errorText = "Google signup failed";

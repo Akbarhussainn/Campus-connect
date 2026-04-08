@@ -1,22 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/user_service.dart';
 
-Future<void> saveUser(User user) async {
-  final userRef =
-      FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-  final doc = await userRef.get();
-
-  if (!doc.exists) {
-    await userRef.set({
-      "uid": user.uid,
-      "email": user.email,
-      "name": user.email!.split('@')[0],
-      "createdAt": Timestamp.now(),
-    });
-  }
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -69,11 +55,12 @@ class _LoginScreenState extends State<LoginScreen> {
     print("✅ LOGIN SUCCESS");
 
     // 🔥 SAVE USER PROPERLY
-    await saveUser(user);
+    // 🚀 NAVIGATE FIRST (IMPORTANT)
+if (!mounted) return;
+Navigator.pushReplacementNamed(context, '/dashboard');
 
-    if (!mounted) return;
-
-    Navigator.pushReplacementNamed(context, '/dashboard');
+// 🔥 SAVE IN BACKGROUND (NO BLOCK)
+saveUser(user);
 
   } on FirebaseAuthException catch (e) {
     print("LOGIN ERROR: ${e.code}");
@@ -83,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
         errorText = "Account not found";
         break;
       case 'wrong-password':
-        errorText = "Wrong password";
+        errorText = "Wrong password or try Google login";
         break;
       case 'invalid-email':
         errorText = "Invalid email format";
@@ -132,11 +119,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     // 🔥 SAVE USER FIRST
-    await saveUser(user);
+if (!mounted) return;
+Navigator.pushReplacementNamed(context, '/dashboard');
 
-    if (!mounted) return;
-
-    Navigator.pushReplacementNamed(context, '/dashboard');
+saveUser(user);
 
   } catch (e) {
     setState(() {
