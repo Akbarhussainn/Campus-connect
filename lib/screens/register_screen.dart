@@ -48,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // 🔥 SAVE USER FIRST (IMPORTANT FIX)
   if (!mounted) return;
-Navigator.pushReplacementNamed(context, '/dashboard');
+Navigator.pushReplacementNamed(context, '/profile'); // 🚀 NAVIGATE FIRST
 
 saveUser(user);
 
@@ -108,7 +108,7 @@ Future<void> signInWithGoogle() async {
 
     if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, '/dashboard');
+    Navigator.pushReplacementNamed(context, '/profile'); // 🚀 NAVIGATE FIRST
 saveUser(user); // ❗ no await
   } catch (e) {
     setState(() {

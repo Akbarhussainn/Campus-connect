@@ -6,14 +6,23 @@ Future<void> saveUser(User user) async {
     final userRef =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-    await userRef.set({
-      "uid": user.uid,
-      "email": user.email?.toLowerCase(),
-      "name": user.email!.split('@')[0],
-      "createdAt": Timestamp.now(),
-    }, SetOptions(merge: true));
+    final doc = await userRef.get();
 
-    print("✅ User saved");
+    // ✅ ONLY CREATE IF NOT EXISTS
+    if (!doc.exists) {
+      await userRef.set({
+        "uid": user.uid,
+        "email": user.email?.toLowerCase(),
+        "name": user.email!.split('@')[0],
+        "bio": "",
+        "imageUrl": "",
+        "createdAt": Timestamp.now(),
+      });
+
+      print("✅ New user created");
+    } else {
+      print("ℹ️ User already exists (not overwriting)");
+    }
 
   } catch (e) {
     print("🔥 Firestore error: $e");

@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // 🔥 SAVE USER PROPERLY
     // 🚀 NAVIGATE FIRST (IMPORTANT)
 if (!mounted) return;
-Navigator.pushReplacementNamed(context, '/dashboard');
+Navigator.pushReplacementNamed(context, '/profile');
 
 // 🔥 SAVE IN BACKGROUND (NO BLOCK)
 saveUser(user);
@@ -120,7 +120,7 @@ saveUser(user);
 
     // 🔥 SAVE USER FIRST
 if (!mounted) return;
-Navigator.pushReplacementNamed(context, '/dashboard');
+Navigator.pushReplacementNamed(context, '/profile'); // 🚀 NAVIGATE FIRST (IMPORTANT)
 
 saveUser(user);
 

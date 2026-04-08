@@ -29,6 +29,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   video_player: ^2.8.2
+  image_picker: ^1.0.7
+  firebase_storage: ^11.6.6
 
   flutter:
     sdk: flutter

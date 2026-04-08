@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,35 +13,59 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   // 🔥 DUMMY USERS ONLY
-  final List<Map<String, dynamic>> users = [
-    {
-      "name": "Rahul",
-      "email": "rahul@kzu.ac.in",
-      "image": "https://i.pravatar.cc/400?img=1"
-    },
-    {
-      "name": "Ankit",
-      "email": "ankit@kzu.ac.in",
-      "image": "https://i.pravatar.cc/400?img=2"
-    },
-    {
-      "name": "Priya",
-      "email": "priya@kzu.ac.in",
-      "image": "https://i.pravatar.cc/400?img=3"
-    },
-    {
-      "name": "Neha",
-      "email": "neha@kzu.ac.in",
-      "image": "https://i.pravatar.cc/400?img=4"
-    },
-  ];
+List<Map<String, dynamic>> users = [];
+bool isLoading = true;
 
   @override
+void initState() {
+  super.initState();
+  fetchUsers();
+}
+   Future<void> fetchUsers() async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final snapshot =
+        await FirebaseFirestore.instance.collection('users').get();
+
+    final allUsers = snapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          data['uid'] = doc.id;
+          return data;
+        })
+        //.where((user) => user['uid'] != currentUser.uid)
+        .toList();
+
+    setState(() {
+      users = List<Map<String, dynamic>>.from(allUsers);
+      isLoading = false;
+    });
+
+  } catch (e) {
+    print("🔥 ERROR: $e");
+    setState(() => isLoading = false);
+  }
+}
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff0f172a),
 
-      body: SafeArea(
+      body: isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : users.isEmpty
+        ? const Center(
+            child: Text(
+              "No users found",
+              style: TextStyle(color: Colors.white),
+            ),
+          )
+        : SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 10),
@@ -87,7 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           image: DecorationImage(
-                            image: NetworkImage(user['image']),
+                            image: NetworkImage(
+  user['imageUrl'] != null && user['imageUrl'] != ""
+      ? user['imageUrl']
+      : "https://i.pravatar.cc/400?img=10",
+),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -121,12 +151,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Text(
-                                  user['email'],
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                             Text(
+  user['bio'] != null && user['bio'] != ""
+      ? user['bio']
+      : "No bio yet",
+  style: const TextStyle(color: Colors.grey),
+)
                               ],
                             ),
                           ),

@@ -8,6 +8,7 @@ import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'router.dart'; // your router file
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +53,8 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
         '/auth': (context) => const AuthWrapper(),
-        '/dashboard': (context) => const DashboardPage() // After any changes we have to add here 
+        '/dashboard': (context) => const DashboardPage(),// After any changes we have to add here 
+        '/profile': (context) => const ProfileScreen(),
       },
       // 👇 Make AuthWrapper the initial screen
       initialRoute: '/dashboard',
