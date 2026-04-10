@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '779894881346',
     projectId: 'akain-campusconnect',
     authDomain: 'akain-campusconnect.firebaseapp.com',
-    storageBucket: 'akain-campusconnect.firebasestorage.app',
+    storageBucket: 'akain-campusconnect.appspot.com',
     measurementId: 'G-7HFYRKTYXD',
   );
 
@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     appId: '1:779894881346:android:470d5e4d2abda0171081db',
     messagingSenderId: '779894881346',
     projectId: 'akain-campusconnect',
-    storageBucket: 'akain-campusconnect.firebasestorage.app',
+    storageBucket: 'akain-campusconnect.appspot.com',
   );
 
 }

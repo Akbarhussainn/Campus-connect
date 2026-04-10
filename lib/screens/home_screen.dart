@@ -42,15 +42,20 @@ void initState() {
         //.where((user) => user['uid'] != currentUser.uid)
         .toList();
 
-    setState(() {
-      users = List<Map<String, dynamic>>.from(allUsers);
-      isLoading = false;
-    });
+if (!mounted) return;
+
+setState(() {
+  users = List<Map<String, dynamic>>.from(allUsers);
+  isLoading = false;
+});
 
   } catch (e) {
-    print("🔥 ERROR: $e");
-    setState(() => isLoading = false);
-  }
+  print("🔥 ERROR: $e");
+
+  if (!mounted) return;
+
+  setState(() => isLoading = false);
+}
 }
   Widget build(BuildContext context) {
     return Scaffold(

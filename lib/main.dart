@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'auth_wrapper.dart'; // ADD THIS
 import 'screens/welcome_screen.dart';
@@ -12,12 +13,18 @@ import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // 🔥 FORCE ONLINE MODE
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false, // VERY IMPORTANT
+  );
+
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -57,7 +64,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
       },
       // 👇 Make AuthWrapper the initial screen
-      initialRoute: '/dashboard',
+      initialRoute: '/',
     );  
   }
 }

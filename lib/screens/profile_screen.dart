@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,72 +17,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final nameController = TextEditingController();
   final bioController = TextEditingController();
 
-  File? _image;
+  XFile? _image;   // ✅ WEB FRIENDLY
   bool loading = false;
 
   final user = FirebaseAuth.instance.currentUser;
 
-  // 📸 PICK IMAGE
-  Future<void> pickImage() async {
-    final picked =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+  
 
-    if (picked != null) {
-      setState(() {
-        _image = File(picked.path);
-      });
-    }
+  // 📸 PICK IMAGE
+ Future<void> pickImage() async {
+  final ImagePicker picker = ImagePicker();
+
+  final XFile? pickedFile = await picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 80,
+  );
+
+  if (pickedFile != null) {
+    setState(() {
+      _image = pickedFile;
+    });
+  } else {
+    print("No image selected");
   }
+}
 
   // ☁️ UPLOAD IMAGE
-  Future<String> uploadImage() async {
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('profile_images/${user!.uid}.jpg');
-
-    await ref.putFile(_image!);
-
-    return await ref.getDownloadURL();
+Future<String> uploadImage() async {
+  if (_image == null) {
+    throw Exception("No image selected");
   }
 
+  final ref = FirebaseStorage.instance
+      .ref()
+      .child('profile_images/${user!.uid}.jpg');
+
+  final bytes = await _image!.readAsBytes();
+
+  await ref.putData(bytes);
+
+  return await ref.getDownloadURL();
+}
   // 💾 SAVE PROFILE
-  Future<void> saveProfile() async {
-    if (_image == null || nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Fill all fields")),
-      );
-      return;
-    }
 
-    setState(() => loading = true);
-
-    try {
-      final imageUrl = await uploadImage();
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .set({
-        "uid": user!.uid,
-        "email": user!.email,
-        "name": nameController.text.trim(),
-        "bio": bioController.text.trim(),
-        "imageUrl": imageUrl,
-        "createdAt": Timestamp.now(),
-          },
-        SetOptions(merge: true));
-      
-
-      if (!mounted) return;
-
-      Navigator.pushReplacementNamed(context, '/dashboard');
-
-    } catch (e) {
-      print("🔥 ERROR: $e");
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
+ Future<void> saveProfile() async {
+  if (_image == null || nameController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Fill all fields")),
+    );
+    return;
   }
+
+  setState(() => loading = true);
+
+  try {
+    print("🚀 Upload started");
+
+    final imageUrl = await uploadImage();
+
+    print("✅ Image uploaded");
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .set({
+      "uid": user!.uid,
+      "email": user!.email,
+      "name": nameController.text.trim(),
+      "bio": bioController.text.trim(),
+      "imageUrl": imageUrl,
+      "createdAt": Timestamp.now(),
+    }, SetOptions(merge: true));
+
+    print("✅ Firestore saved");
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Profile saved successfully")),
+    );
+
+    Navigator.pushReplacementNamed(context, '/dashboard');
+
+  } catch (e) {
+    print("🔥 ERROR: $e");
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: ${e.toString()}")),
+    );
+
+  } finally {
+    if (mounted) setState(() => loading = false);
+  }
+}
 
   // 🚪 LOGOUT
   Future<void> logout() async {
@@ -122,8 +151,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.grey,
-                backgroundImage:
-                    _image != null ? FileImage(_image!) : null,
+                backgroundImage: _image != null
+    ? Image.network(_image!.path).image
+    : null,
                 child: _image == null
                     ? const Icon(Icons.camera_alt, size: 40)
                     : null,
