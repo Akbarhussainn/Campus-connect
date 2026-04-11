@@ -11,6 +11,7 @@ import 'screens/dashboard_screen.dart';
 import 'router.dart'; // your router file
 import 'screens/profile_screen.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -18,9 +19,10 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 🔥 FORCE ONLINE MODE
+  // 🔥 CRITICAL FIX
   FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: false, // VERY IMPORTANT
+    persistenceEnabled: false,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
   runApp(const MyApp());
