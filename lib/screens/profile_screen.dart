@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 
 class ProfileScreen extends StatefulWidget {
@@ -42,26 +43,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-  // ☁️ UPLOAD IMAGE
-Future<String> uploadImage() async {
-  if (_image == null) {
-    throw Exception("No image selected");
+  // ☁️ CLOUDINARY UNSIGNED UPLOAD (STRICT)
+Future<String> uploadToCloudinary(XFile imageFile) async {
+  const String cloudName = "dsnvja3wr";
+  const String uploadPreset = "campusconnect_upload";
+
+  final url = Uri.parse("https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+
+  try {
+    print("🚀 Cloudinary Unsigned Upload started...");
+    
+    final bytes = await imageFile.readAsBytes();
+    
+    // Create a clean MultipartRequest
+    final request = http.MultipartRequest("POST", url);
+    
+    // ✅ Include cloud_name in fields (sometimes required for Web)
+    request.fields['upload_preset'] = uploadPreset;
+    request.fields['cloud_name'] = cloudName;
+    
+    // ✅ Add the file
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: imageFile.name,
+    ));
+
+    // ✅ Force simple headers to avoid pre-flight confusion
+    request.headers.addAll({
+      'Accept': 'application/json',
+    });
+
+    print("📤 Sending to: $url");
+    print("📦 Fields: ${request.fields}");
+
+    final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
+    final response = await http.Response.fromStream(streamedResponse);
+
+    print("📡 Response Status: ${response.statusCode}");
+    print("📄 Response Body: ${response.body}");
+
+    final jsonResponse = json.decode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final secureUrl = jsonResponse['secure_url'];
+      print("✅ secure_url received: $secureUrl");
+      return secureUrl;
+    } else {
+      final errorMsg = jsonResponse['error']?['message'] ?? "Unknown Cloudinary error";
+      print("❌ Cloudinary Error: $errorMsg");
+      throw Exception("Cloudinary Error: $errorMsg");
+    }
+  } catch (e) {
+    print("❌ Cloudinary Exception: $e");
+    rethrow;
   }
-
-  final ref = FirebaseStorage.instance
-      .ref()
-      .child('profile_images/${user!.uid}.jpg');
-
-  final bytes = await _image!.readAsBytes();
-
-  await ref.putData(bytes);
-
-  return await ref.getDownloadURL();
 }
   // 💾 SAVE PROFILE
 
  Future<void> saveProfile() async {
-  if (_image == null || nameController.text.isEmpty) {
+  if (nameController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Fill all fields")),
     );
@@ -71,11 +112,16 @@ Future<String> uploadImage() async {
   setState(() => loading = true);
 
   try {
-    print("🚀 Upload started");
+    String imageUrl = "https://via.placeholder.com/300";
 
-    final imageUrl = await uploadImage();
+    if (_image != null) {
+      print("🚀 Uploading to Cloudinary...");
+      imageUrl = await uploadToCloudinary(_image!);
+    } else {
+      print("🚀 No image selected, using placeholder");
+    }
 
-    print("✅ Image uploaded");
+    print("👤 Saving profile to Firestore...");
 
     await FirebaseFirestore.instance
         .collection('users')
@@ -86,10 +132,14 @@ Future<String> uploadImage() async {
       "name": nameController.text.trim(),
       "bio": bioController.text.trim(),
       "imageUrl": imageUrl,
-      "createdAt": Timestamp.now(),
-    }, SetOptions(merge: true));
+      "updatedAt": FieldValue.serverTimestamp(), 
+      "createdAt": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).timeout(const Duration(seconds: 15), onTimeout: () {
+      print("⚠️ Firestore write is slow, but should sync eventually.");
+      // Do not throw here, allow user to proceed
+    });
 
-    print("✅ Firestore saved");
+    print("✅ Firestore sync initiated");
 
     if (!mounted) return;
 

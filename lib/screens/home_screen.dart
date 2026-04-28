@@ -24,14 +24,24 @@ void initState() {
    Future<void> fetchUsers() async {
   try {
     final currentUser = FirebaseAuth.instance.currentUser;
-
+  print("🔥 Fetching users...");
     if (currentUser == null) {
       setState(() => isLoading = false);
       return;
     }
+    
 
-    final snapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get(const GetOptions(source: Source.serverAndCache))
+        .timeout(const Duration(seconds: 8))
+        .catchError((e) {
+      debugPrint("ℹ️ Firestore fetch timed out or failed: $e");
+      // Fallback to cache
+      return FirebaseFirestore.instance
+          .collection('users')
+          .get(const GetOptions(source: Source.cache));
+    });
 
     final allUsers = snapshot.docs
         .map((doc) {
@@ -39,23 +49,27 @@ void initState() {
           data['uid'] = doc.id;
           return data;
         })
-        //.where((user) => user['uid'] != currentUser.uid)
-        .toList();
+        .where((user) => user['uid'] != currentUser.uid)
+        .toList(); 
+        print("✅ Users fetched: ${snapshot.docs.length}");
 
-if (!mounted) return;
+    if (!mounted) return;
 
-setState(() {
-  users = List<Map<String, dynamic>>.from(allUsers);
-  isLoading = false;
-});
+    setState(() {
+      users = List<Map<String, dynamic>>.from(allUsers);
+      isLoading = false;
+    });
 
   } catch (e) {
-  print("🔥 ERROR: $e");
+    print("🔥 ERROR in fetchUsers: $e");
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() => isLoading = false);
-}
+    setState(() {
+      isLoading = false;
+      // If we are completely offline and have no cache, we just show empty list
+    });
+  }
 }
   Widget build(BuildContext context) {
     return Scaffold(
