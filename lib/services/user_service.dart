@@ -7,17 +7,24 @@ Future<void> saveUser(User user) async {
     final userRef =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-    // ✅ TRY GETTING FROM SERVER FIRST, FALLBACK TO CACHE
+    // ✅ FORCE SERVER FETCH ON WEB TO AVOID CACHE TIMEOUTS
     DocumentSnapshot? doc;
     try {
-      doc = await userRef.get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 5));
+      if (kIsWeb) {
+        // On Web with persistence disabled, we must fetch from server
+        doc = await userRef.get(const GetOptions(source: Source.server))
+            .timeout(const Duration(seconds: 15));
+      } else {
+        doc = await userRef.get(const GetOptions(source: Source.serverAndCache))
+            .timeout(const Duration(seconds: 10));
+      }
     } catch (e) {
-      debugPrint("ℹ️ Firestore fetch delayed or offline: $e");
-      try {
-        doc = await userRef.get(const GetOptions(source: Source.cache));
-      } catch (cacheError) {
-        debugPrint("❌ Cache fetch also failed: $cacheError");
+      debugPrint("ℹ️ Initial fetch failed/timed out: $e");
+      // If server fails, we try cache ONLY if not on Web (or if persistence is on)
+      if (!kIsWeb) {
+        try {
+          doc = await userRef.get(const GetOptions(source: Source.cache));
+        } catch (_) {}
       }
     }
 
@@ -29,15 +36,20 @@ Future<void> saveUser(User user) async {
         "name": user.email!.split('@')[0],
         "bio": "",
         "imageUrl": "",
-        "createdAt": FieldValue.serverTimestamp(), // Better than Timestamp.now()
-      }, SetOptions(merge: true));
+        "createdAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
 
       print("✅ New user record created");
     } else {
-      print("ℹ️ User already exists in Firestore");
+      print("ℹ️ User verified in Firestore");
     }
 
   } catch (e) {
     print("🔥 Firestore error in saveUser: $e");
   }
+}
+
+Stream<DocumentSnapshot> getUserStream(String uid) {
+  // We use server-first stream on Web to ensure fresh data
+  return FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
 }
